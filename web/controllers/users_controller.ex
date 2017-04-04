@@ -1,7 +1,7 @@
 defmodule Agitate.UsersController do
   use Agitate.Web, :controller
   use Guardian.Phoenix.Controller
-  
+
   alias Agitate.User
   alias Agitate.UserQuery
   alias Agitate.Repo
@@ -9,14 +9,14 @@ defmodule Agitate.UsersController do
   plug :scrub_params, "user" when action in [ :create, :update ]
   plug Guardian.Plug.LoadResource, handler: AuthHandler
 
-  
+
   def index(conn, _params, user, _claims) do
     user = if user do
       Repo.preload(user, :applications)
     end
-    
+
     conn
-    |> assign(:changeset, User.new_changeset())
+    |> assign(:changeset, User.changeset(%User{}))
     |> assign(:action, users_path(conn, :create))
     |> assign(:user, user)
     |> render(:index)
@@ -24,7 +24,7 @@ defmodule Agitate.UsersController do
 
   def new(conn, _params, _user, _claims) do
     conn
-    |> assign(:changeset, User.new_changeset())
+    |> assign(:changeset, User.changeset(%User{}))
     |> assign(:action, users_path(conn, :create))
     |> render("new.html")
   end
@@ -33,9 +33,9 @@ defmodule Agitate.UsersController do
   def show(conn, _params, user, _claims) do
     render conn, "show.html", user: user
   end
-  
+
   def create(conn, %{ "user" => params }, _user, _claims) do
-    changeset = User.registration_changeset %User{}, params
+    changeset = User.changeset %User{}, params
     case Repo.insert(changeset) do
       { :ok, user } ->
         conn
@@ -51,14 +51,14 @@ defmodule Agitate.UsersController do
         |> render("new.html")
     end
   end
-  
+
   def update(conn, _params, nil, _claims), do: redirect_to_root(conn)
   def update(conn, %{ "id" => id, "user" => params }, user, _claims) do
     if id != to_string(user.id) do
       redirect_to_root(conn)
     else
       { :ok, user } = UserQuery.by_id id
-      changeset     = User.registration_changeset user, params
+      changeset     = User.changeset user, params
       case Repo.update(changeset) do
         { :ok, user } ->
           redirect conn, to: users_path(conn, :show, user.id)
@@ -70,10 +70,10 @@ defmodule Agitate.UsersController do
       end
     end
   end
-  
+
   def edit(conn, _params, nil, _claims), do: redirect_to_root(conn)
   def edit(conn, %{ "id" => _id }, user, _claims) do
-    changeset = User.registration_changeset user
+    changeset = User.changeset user
     conn
     |> assign(:changeset, changeset)
     |> assign(:action, users_path(conn, :update, user.id))
